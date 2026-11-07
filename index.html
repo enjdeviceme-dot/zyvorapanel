@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZYVORA STREAMER — License Admin</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial;background:#0b1020;color:#edf2ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px}
+main{width:min(680px,100%);background:#141c32;border:1px solid #293653;border-radius:20px;padding:26px;box-shadow:0 20px 60px #0006}
+h1{margin:0;font-size:25px}p{color:#aebbd5;line-height:1.5}.tag{color:#c4a7ff;font-size:12px;letter-spacing:2px;font-weight:800}
+label{display:block;margin:16px 0 7px;color:#cbd5e1;font-size:14px}
+input{width:100%;padding:13px;border:1px solid #394867;border-radius:10px;background:#0c1428;color:white;font-size:15px}
+button{margin-top:18px;border:0;border-radius:10px;padding:13px 17px;background:#8057e8;color:white;font-weight:700;font-size:15px;cursor:pointer}
+button.secondary{background:#293653;margin-left:8px}
+.hidden{display:none}.out{margin-top:20px;padding:15px;border-radius:12px;background:#0b1428;border:1px solid #34425e;overflow-wrap:anywhere}
+pre{white-space:pre-wrap;word-break:break-all;color:#bfe6d0;font-size:13px}
+small{color:#94a3b8}.error{color:#ff9b9b}.ok{color:#9ce6b4}
+</style></head>
+<body><main>
+<div class="tag">ZYVORA • LICENSE CONTROL</div><h1>Streamer License Generator</h1>
+<p>Issue independent lifetime licenses for your own ZYVORA STREAMER app. This does not create or replace another developer’s license keys.</p>
+<section id="login">
+<label>Admin password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter server admin password">
+<button id="loginBtn">Login</button><p id="loginMsg" class="error"></p>
+</section>
+<section id="panel" class="hidden">
+<label>Customer / owner name</label><input id="customer" placeholder="e.g. Streamer 01">
+<label>Device ID (optional — leave blank for an unbound license)</label><input id="device" placeholder="Device identifier">
+<button id="issueBtn">Generate lifetime license</button>
+<div id="result" class="out hidden"><strong class="ok">License generated</strong><pre id="license"></pre><button id="copyBtn">Copy license</button><button class="secondary" id="payloadBtn">Show details</button><pre id="details" class="hidden"></pre></div>
+<p id="msg" class="error"></p>
+</section>
+<p><small>Keep the server's <code>data/license-private.pem</code> secret and backed up securely. Publish only the public key inside your app. Use HTTPS in production.</small></p>
+</main>
+<script>
+let token="", lastPayload=null;
+const $=id=>document.getElementById(id);
+async function api(path,body={},auth=false){
+ const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json",...(auth?{Authorization:"Bearer "+token}:{})},body:JSON.stringify(body)});
+ const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");return d;
+}
+$("loginBtn").onclick=async()=>{ $("loginMsg").textContent="";try{const d=await api("/api/login",{password:$("password").value});token=d.token;$("login").classList.add("hidden");$("panel").classList.remove("hidden");}catch(e){$("loginMsg").textContent=e.message;}};
+$("issueBtn").onclick=async()=>{ $("msg").textContent="";$("result").classList.add("hidden");try{const d=await api("/api/issue",{customer:$("customer").value,deviceId:$("device").value},true);$("license").textContent=d.license;lastPayload=d.payload;$("details").textContent=JSON.stringify(d.payload,null,2);$("result").classList.remove("hidden");}catch(e){$("msg").textContent=e.message;}};
+$("copyBtn").onclick=async()=>{await navigator.clipboard.writeText($("license").textContent);$("copyBtn").textContent="Copied";};
+$("payloadBtn").onclick=()=>{$("details").classList.toggle("hidden");};
+</script></body></html>
